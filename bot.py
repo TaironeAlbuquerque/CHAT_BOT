@@ -1,27 +1,13 @@
 import logging
 import random
 import os
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import (
-    ApplicationBuilder,
-    CommandHandler,
-    CallbackQueryHandler,
-    MessageHandler,
-    ConversationHandler,
-    ContextTypes,
-    filters,
-)
-from flask import Flask
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ConversationHandler
+from flask import Flask, request, jsonify
 import threading
 
 # Configuração do logging
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # Estados da conversa
 MENU, RASTREAR_CPF, SUPORTE = range(3)
@@ -48,7 +34,7 @@ def gerar_dados_ficticios():
             dados_rastreamento[cpf].append({"codigo": codigo, "status": status})
 
 # Comando /start
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start(update: Update, context) -> int:
     gerar_dados_ficticios()
     keyboard = [
         [
@@ -65,7 +51,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return MENU
 
 # Manipulador de botões
-async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def menu(update: Update, context) -> int:
     query = update.callback_query
     await query.answer()
     if query.data == "rastrear":
@@ -76,7 +62,7 @@ async def menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return SUPORTE
 
 # Função para rastrear pedidos
-async def rastrear(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def rastrear(update: Update, context) -> int:
     cpf = update.message.text.strip()
     pedidos = dados_rastreamento.get(cpf)
     if pedidos:
@@ -89,14 +75,14 @@ async def rastrear(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 # Função para suporte
-async def suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def suporte(update: Update, context) -> int:
     mensagem = update.message.text
     await update.message.reply_text("Obrigado por entrar em contato! Nossa equipe responderá em breve.")
     # Aqui você pode adicionar lógica para enviar a mensagem para um canal ou salvar em um banco de dados
     return ConversationHandler.END
 
 # Comando /cancel
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cancel(update: Update, context) -> int:
     await update.message.reply_text("Operação cancelada. Volte sempre que precisar!")
     return ConversationHandler.END
 
@@ -115,7 +101,7 @@ def main():
     threading.Thread(target=run).start()
 
     # Inicializa o bot do Telegram
-    application = ApplicationBuilder().token("SEU_TOKEN_AQUI").build()
+    application = Application.builder().token("SEU_TOKEN_AQUI").build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
