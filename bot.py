@@ -1,16 +1,15 @@
 import logging
 import random
-import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ConversationHandler
-from flask import Flask, request, jsonify
+from flask import Flask
 import threading
 
-# Configuração do logging
+# Configuração de logging
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # Estados da conversa
-MENU, RASTREAR_CPF, SUPORTE = range(3)
+MENU, RASTREAR_CPF, CADASTRAR_CPF, SUPORTE = range(4)
 
 # Dados fictícios para rastreamento
 dados_rastreamento = {
@@ -40,6 +39,7 @@ async def start(update: Update, context) -> int:
         [
             InlineKeyboardButton("📦 Rastrear Pedido", callback_data="rastrear"),
             InlineKeyboardButton("🛠️ Suporte", callback_data="suporte"),
+            InlineKeyboardButton("📝 Cadastrar CPF", callback_data="cadastrar"),
         ]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -60,6 +60,9 @@ async def menu(update: Update, context) -> int:
     elif query.data == "suporte":
         await query.edit_message_text("Por favor, descreva sua dúvida ou problema:")
         return SUPORTE
+    elif query.data == "cadastrar":
+        await query.edit_message_text("Por favor, informe seu CPF para cadastro:")
+        return CADASTRAR_CPF
 
 # Função para rastrear pedidos
 async def rastrear(update: Update, context) -> int:
@@ -74,11 +77,18 @@ async def rastrear(update: Update, context) -> int:
     await update.message.reply_text(mensagem)
     return ConversationHandler.END
 
+# Função para cadastrar CPF
+async def cadastrar_cpf(update: Update, context) -> int:
+    cpf = update.message.text.strip()
+    # Lógica para salvar o CPF (ex: banco de dados)
+    await update.message.reply_text(f"CPF {cpf} cadastrado com sucesso!")
+    return ConversationHandler.END
+
 # Função para suporte
 async def suporte(update: Update, context) -> int:
     mensagem = update.message.text
     await update.message.reply_text("Obrigado por entrar em contato! Nossa equipe responderá em breve.")
-    # Aqui você pode adicionar lógica para enviar a mensagem para um canal ou salvar em um banco de dados
+    # Lógica para enviar a mensagem para um canal ou salvar em banco de dados
     return ConversationHandler.END
 
 # Comando /cancel
@@ -88,7 +98,7 @@ async def cancel(update: Update, context) -> int:
 
 # Função principal
 def main():
-    # Inicializa o aplicativo Flask para manter o serviço ativo no Render
+    # Inicializa o aplicativo Flask para manter o serviço ativo
     app = Flask(__name__)
 
     @app.route('/')
@@ -108,13 +118,13 @@ def main():
         states={
             MENU: [CallbackQueryHandler(menu)],
             RASTREAR_CPF: [MessageHandler(filters.TEXT & ~filters.COMMAND, rastrear)],
+            CADASTRAR_CPF: [MessageHandler(filters.TEXT & ~filters.COMMAND, cadastrar_cpf)],
             SUPORTE: [MessageHandler(filters.TEXT & ~filters.COMMAND, suporte)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
 
     application.add_handler(conv_handler)
-
     application.run_polling()
 
 if __name__ == "__main__":
