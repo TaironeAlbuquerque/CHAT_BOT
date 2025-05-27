@@ -17,7 +17,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f'Status do pedido {pedido}: {status}')
 
 def main():
-    application = ApplicationBuilder().token('SEU_TOKEN').build()
+    application = ApplicationBuilder().token('7304383872:AAH9jS7Vgix9TrgwjDWRBfg1ejgN6haik-0').build()
 
     application.add_handler(CommandHandler('start', start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
